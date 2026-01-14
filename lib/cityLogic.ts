@@ -1,4 +1,6 @@
 import { Building, BuildingType, CityState } from "./cityTypes";
+import { calculateVariant } from "./buildingUpgrade";
+import { evolveBuildings } from "./buildingUpgrade";
 
 export function createInitialCity(slug: string, name?: string): CityState {
   const seed = slug || "minha-cidade";
@@ -11,6 +13,8 @@ export function createInitialCity(slug: string, name?: string): CityState {
     y: 0,
     type: "home",
     stage: 1,
+    level: 1,
+    variant: calculateVariant(0, 0, "home"),
     createdAtVisit: 0,
   };
 
@@ -60,18 +64,8 @@ function applySingleVisit(city: CityState): CityState {
     spawnBuilding(nextCity, types[typeIndex], nextVisits);
   }
 
-  // Evolução: a cada 5 visitas, aumenta stage em +1 para TODOS buildings até maxStage=4
-  if (nextVisits % 5 === 0) {
-    for (const buildingId in nextCity.buildings) {
-      const building = nextCity.buildings[buildingId];
-      if (building.stage < 4) {
-        nextCity.buildings[buildingId] = {
-          ...building,
-          stage: building.stage + 1,
-        };
-      }
-    }
-  }
+  // Evolução: usar sistema de level (1-3) baseado em visitas
+  nextCity.buildings = evolveBuildings(nextCity.buildings, nextVisits, 3);
 
   return nextCity;
 }
@@ -87,6 +81,8 @@ function spawnBuilding(city: CityState, type: BuildingType, createdAtVisit: numb
     y: position.y,
     type,
     stage: 1,
+    level: 1,
+    variant: calculateVariant(position.x, position.y, type),
     createdAtVisit,
   };
 }

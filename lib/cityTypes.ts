@@ -5,7 +5,9 @@ export type Building = {
   x: number;
   y: number;
   type: BuildingType;
-  stage: number;
+  stage: number; // Mantido para compatibilidade (1-4)
+  level: number; // Nível de evolução (1-3)
+  variant: number; // Variante determinística (0..N-1)
   createdAtVisit: number;
 };
 

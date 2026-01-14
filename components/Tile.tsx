@@ -1,18 +1,27 @@
 import React, { useState } from "react";
-import { getTileSprite } from "../lib/tiles";
+import { resolveVisual } from "../lib/buildingVisuals";
 
 type TileProps = {
   type: string;
-  stage: number;
+  level: number;
+  variant?: number;
   size?: number;
   label?: string;
+  showDebug?: boolean;
 };
 
-export default function Tile({ type, stage, size = 64, label }: TileProps) {
+export default function Tile({ 
+  type, 
+  level, 
+  variant = 0, 
+  size = 64, 
+  label,
+  showDebug = false,
+}: TileProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   
-  const spriteSrc = getTileSprite(type, stage);
-  const displayLabel = label || `${type.substring(0, 3)} S${stage}`;
+  const spriteSrc = resolveVisual(type as any, level, variant);
+  const displayLabel = label || (showDebug ? `${type.substring(0, 3)} L${level} V${variant}` : undefined);
   
   return (
     <div
@@ -29,7 +38,7 @@ export default function Tile({ type, stage, size = 64, label }: TileProps) {
     >
       <img
         src={spriteSrc}
-        alt={`${type} stage ${stage}`}
+        alt={`${type} level ${level}`}
         style={{
           width: "100%",
           height: "100%",
@@ -37,7 +46,7 @@ export default function Tile({ type, stage, size = 64, label }: TileProps) {
           imageRendering: "pixelated",
         }}
       />
-      {showTooltip && label !== undefined && (
+      {showTooltip && displayLabel && (
         <div
           style={{
             position: "absolute",
@@ -52,6 +61,23 @@ export default function Tile({ type, stage, size = 64, label }: TileProps) {
             whiteSpace: "nowrap",
             marginBottom: "4px",
             pointerEvents: "none",
+          }}
+        >
+          {displayLabel}
+        </div>
+      )}
+      {showDebug && displayLabel && (
+        <div
+          style={{
+            position: "absolute",
+            top: "2px",
+            right: "2px",
+            backgroundColor: "rgba(0,0,0,0.7)",
+            color: "white",
+            padding: "2px 4px",
+            fontSize: "8px",
+            borderRadius: "2px",
+            fontWeight: "bold",
           }}
         >
           {displayLabel}

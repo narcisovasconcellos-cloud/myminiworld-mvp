@@ -1,0 +1,9 @@
+"use strict";(()=>{var e={};e.id=319,e.ids=[319],e.modules={145:e=>{e.exports=require("next/dist/compiled/next-server/pages-api.runtime.prod.js")},2079:e=>{e.exports=import("openai")},6249:(e,t)=>{Object.defineProperty(t,"l",{enumerable:!0,get:function(){return function e(t,n){return n in t?t[n]:"then"in t&&"function"==typeof t.then?t.then(t=>e(t,n)):"function"==typeof t&&"default"===n?t:void 0}}})},8818:(e,t,n)=>{n.a(e,async(e,r)=>{try{n.r(t),n.d(t,{config:()=>d,default:()=>l,routeModule:()=>p});var a=n(1802),i=n(7153),o=n(6249),s=n(5605),u=e([s]);s=(u.then?(await u)():u)[0];let l=(0,o.l)(s,"default"),d=(0,o.l)(s,"config"),p=new a.PagesAPIRouteModule({definition:{kind:i.x.PAGES_API,page:"/api/visualSeed",pathname:"/api/visualSeed",bundlePath:"",filename:""},userland:s});r()}catch(e){r(e)}})},5605:(e,t,n)=>{n.a(e,async(e,r)=>{try{n.r(t),n.d(t,{default:()=>o});var a=n(2079),i=e([a]);let s=new(a=(i.then?(await i)():i)[0]).default({apiKey:process.env.OPENAI_API_KEY});async function o(e,t){if("POST"!==e.method)return t.status(405).json({ok:!1,error:"Method not allowed"});try{let{seed:n,cityName:r,population:a,level:i,biome:o,style:u}=e.body,l=`
+Isometric pixel-art city.
+Name: ${r}
+Population: ${a}
+Development level: ${i}
+Biome: ${o}
+Style: ${u}
+Clean UI, game-like, SimCity inspired.
+`,d=await s.images.generate({model:"gpt-image-1",prompt:l,size:"1024x1024"});return t.status(200).json({ok:!0,b64:d.data[0].b64_json,mime:"image/png"})}catch(e){return console.error("VISUAL ERROR:",e),t.status(500).json({ok:!1,error:e?.message||"OpenAI error"})}}r()}catch(e){r(e)}})},7153:(e,t)=>{var n;Object.defineProperty(t,"x",{enumerable:!0,get:function(){return n}}),function(e){e.PAGES="PAGES",e.PAGES_API="PAGES_API",e.APP_PAGE="APP_PAGE",e.APP_ROUTE="APP_ROUTE"}(n||(n={}))},1802:(e,t,n)=>{e.exports=n(145)}};var t=require("../../webpack-api-runtime.js");t.C(e);var n=t(t.s=8818);module.exports=n})();

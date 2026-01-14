@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { CityState } from "../lib/cityTypes";
+import { CityState, Building } from "../lib/cityTypes";
 import { createInitialCity, applyVisit, resetCity } from "../lib/cityLogic";
+import { calculateVariant } from "../lib/buildingUpgrade";
 import CityViewport from "../components/CityViewport";
 
 function storageKey(slug: string) {
@@ -10,8 +11,35 @@ function storageKey(slug: string) {
 function normalizeCity(raw: any, slug: string): CityState {
   if (!raw || typeof raw !== "object") return createInitialCity(slug);
   
-  // se já tem buildings, ok
-  if (raw.buildings && typeof raw.buildings === "object") return raw as CityState;
+  // Migração: se tem buildings, garantir que têm level/variant
+  if (raw.buildings && typeof raw.buildings === "object") {
+    const city = raw as CityState;
+    let needsMigration = false;
+    const normalizedBuildings: Record<string, Building> = {};
+    
+    for (const [id, building] of Object.entries(city.buildings || {})) {
+      const b = building as any;
+      if (b.level === undefined || b.variant === undefined) {
+        needsMigration = true;
+        normalizedBuildings[id] = {
+          ...b,
+          level: b.level ?? (b.stage ? Math.min(b.stage, 3) : 1),
+          variant: b.variant ?? (b.x !== undefined && b.y !== undefined && b.type ? calculateVariant(b.x, b.y, b.type) : 0),
+        };
+      } else {
+        normalizedBuildings[id] = b;
+      }
+    }
+    
+    if (needsMigration) {
+      return {
+        ...city,
+        buildings: normalizedBuildings,
+      };
+    }
+    
+    return city as CityState;
+  }
   
   // migração de formatos antigos (ex: board 5x5)
   if (raw.board && typeof raw.board === "object") {
@@ -168,6 +196,7 @@ export default function CityPage() {
     </main>
   );
 }
+
 
 
 

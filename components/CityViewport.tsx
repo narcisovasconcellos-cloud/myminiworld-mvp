@@ -61,18 +61,22 @@ export default function CityViewport({
       };
 
       const tileType = building?.type || "empty";
-      const tileStage = building?.stage || 1;
+      // Usar level se disponível, senão mapear stage para level (compatibilidade)
+      const tileLevel = building?.level ?? (building?.stage ? Math.min(building.stage, 3) : 1);
+      const tileVariant = building?.variant ?? 0;
       const tileLabel = showDebug && building 
-        ? `${building.type.substring(0, 3)} S${building.stage || 1}` 
+        ? `${building.type.substring(0, 3)} L${tileLevel} V${tileVariant}` 
         : undefined;
 
       cells.push(
         <div key={key} style={cellStyle}>
           <Tile
             type={tileType}
-            stage={tileStage}
+            level={tileLevel}
+            variant={tileVariant}
             size={64}
             label={tileLabel}
+            showDebug={showDebug}
           />
         </div>
       );
