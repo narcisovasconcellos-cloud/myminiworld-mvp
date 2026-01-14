@@ -1,67 +1,30 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import crypto from "crypto";
-// Aqui você usaria Supabase. Por enquanto deixei “estrutura”.
-// Se você já tem Supabase, eu te passo a versão completa com client.
+import { applyVisit, CityState, createInitialCity } from "../../lib/cityState";
 
-const SECRET = process.env.VISIT_SECRET || "dev-secret";
+type Ok = { ok: true; city: CityState };
+type Err = { ok: false; error: string };
 
-function getIp(req: NextApiRequest) {
-  const xf = req.headers["x-forwarded-for"];
-  const ip = Array.isArray(xf) ? xf[0] : xf?.split(",")[0];
-  return (ip || req.socket.remoteAddress || "0.0.0.0").trim();
-}
+export default function handler(req: NextApiRequest, res: NextApiResponse<Ok | Err>) {
+  const slugParam = req.query.slug;
+  const nameParam = req.query.name;
 
-function ymdUTC(d = new Date()) {
-  const yyyy = d.getUTCFullYear();
-  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
+  const slug = typeof slugParam === "string" ? slugParam : "";
+  const name = typeof nameParam === "string" ? nameParam : undefined;
 
-function upgradesForPopulation(pop: number) {
-  if (pop <= 100) return pop;
-  if (pop <= 1000) return 100 + Math.floor((pop - 100) / 5);
-  return 100 + Math.floor(900 / 5) + Math.floor((pop - 1000) / 10); // 280 + floor((pop-1000)/10)
-}
-
-function nextUpgradeIn(pop: number) {
-  if (pop < 100) return 1;
-  if (pop < 1000) {
-    const next = 100 + (Math.floor((pop - 100) / 5) + 1) * 5;
-    return Math.max(1, next - pop);
+  if (!slug) {
+    return res.status(400).json({ ok: false, error: "missing slug" });
   }
-  const next = 1000 + (Math.floor((pop - 1000) / 10) + 1) * 10;
-  return Math.max(1, next - pop);
-}
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const slug = String(req.query.slug || "").trim();
-  const name = String(req.query.name || "").trim();
+  // API é stateless: ela só calcula a próxima versão.
+  // Persistência fica no client (localStorage), por enquanto.
+  const base: CityState = createInitialCity(slug, name);
 
-  if (!slug) return res.status(400).json({ error: "missing slug" });
+  // Se o client quiser enviar o estado atual, dá pra evoluir aqui depois.
+  // Agora: cada chamada = +1 visita em cima do "base" não é ideal,
+  // então no client a gente chama e aplica localmente.
+  // Para manter simples, a API só devolve um "delta" calculado de forma determinística:
+  // Vamos retornar o base com 1 visita aplicada. O client aplica visita sobre seu estado salvo.
+  const next = applyVisit(base);
 
-  const ip = getIp(req);
-  const today = ymdUTC();
-  const visitorHash = crypto.createHash("sha256").update(`${ip}|${today}|${SECRET}`).digest("hex");
-
-  // TODO: trocar esses mocks por Supabase:
-  // 1) upsert city by slug
-  // 2) insert visit unique (city_id, visitor_hash, visit_date)
-  // 3) se inseriu, increment population e recalcular level
-  // 4) retornar cidade
-
-  // MOCK TEMP (só pra não quebrar resposta):
-  const population = 1; // aqui virá do DB
-  const level = upgradesForPopulation(population);
-
-  return res.status(200).json({
-    counted: true, // no real: true se inseriu visita, false se já existia hoje
-    city: {
-      name: name || slug,
-      slug,
-      population,
-      level,
-      nextUpgradeIn: nextUpgradeIn(population),
-    },
-  });
+  return res.status(200).json({ ok: true, city: next });
 }
