@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { resolveVisual } from "../lib/buildingVisuals";
 
 type TileProps = {
@@ -8,6 +8,7 @@ type TileProps = {
   size?: number;
   label?: string;
   showDebug?: boolean;
+  styleSeed?: number;
 };
 
 export default function Tile({ 
@@ -17,11 +18,29 @@ export default function Tile({
   size = 64, 
   label,
   showDebug = false,
+  styleSeed,
 }: TileProps) {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const prevLevelRef = useRef(level);
+  
+  // Detectar mudança de level e ativar animação
+  useEffect(() => {
+    if (level > prevLevelRef.current) {
+      setIsAnimating(true);
+      const timer = setTimeout(() => setIsAnimating(false), 500);
+      prevLevelRef.current = level;
+      return () => clearTimeout(timer);
+    } else {
+      prevLevelRef.current = level;
+    }
+  }, [level]);
   
   const spriteSrc = resolveVisual(type as any, level, variant);
-  const displayLabel = label || (showDebug ? `${type.substring(0, 3)} L${level} V${variant}` : undefined);
+  const debugLabel = showDebug 
+    ? `${type.substring(0, 3)} L${level} V${variant}${styleSeed !== undefined ? ` S${styleSeed}` : ''}` 
+    : undefined;
+  const displayLabel = label || debugLabel;
   
   return (
     <div
@@ -36,16 +55,40 @@ export default function Tile({
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
-      <img
-        src={spriteSrc}
-        alt={`${type} level ${level}`}
+      <div
         style={{
           width: "100%",
           height: "100%",
-          objectFit: "contain",
-          imageRendering: "pixelated",
+          transform: isAnimating ? "scale(1.08)" : "scale(1.0)",
+          transition: isAnimating ? "transform 0.15s ease-out" : "transform 0.3s ease-in",
+          position: "relative",
         }}
-      />
+      >
+        <img
+          src={spriteSrc}
+          alt={`${type} level ${level}`}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            imageRendering: "pixelated",
+          }}
+        />
+        {isAnimating && (
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              boxShadow: "0 0 8px rgba(255, 215, 0, 0.6)",
+              pointerEvents: "none",
+              borderRadius: "2px",
+            }}
+          />
+        )}
+      </div>
       {showTooltip && displayLabel && (
         <div
           style={{
@@ -61,12 +104,13 @@ export default function Tile({
             whiteSpace: "nowrap",
             marginBottom: "4px",
             pointerEvents: "none",
+            zIndex: 10,
           }}
         >
           {displayLabel}
         </div>
       )}
-      {showDebug && displayLabel && (
+      {showDebug && debugLabel && (
         <div
           style={{
             position: "absolute",
@@ -78,9 +122,10 @@ export default function Tile({
             fontSize: "8px",
             borderRadius: "2px",
             fontWeight: "bold",
+            zIndex: 5,
           }}
         >
-          {displayLabel}
+          {debugLabel}
         </div>
       )}
     </div>

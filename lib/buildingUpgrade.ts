@@ -1,5 +1,6 @@
 import { Building, BuildingType } from "./cityTypes";
 import { getMaxVariants } from "./buildingVisuals";
+import { getMaxLevelForType } from "./buildingLimits";
 
 /**
  * Calcula a variante determinística para um building baseado em x, y, tipo.
@@ -12,19 +13,25 @@ export function calculateVariant(x: number, y: number, type: BuildingType): numb
 }
 
 /**
- * Faz upgrade de um building (incrementa level até máximo de 3).
+ * Faz upgrade de um building (incrementa level até máximo do tipo).
+ * Retorna o building atualizado e um flag indicando se houve upgrade.
  */
-export function upgradeBuilding(building: Building, reason?: string): Building {
-  if (building.level >= 3) {
-    return building; // Já está no nível máximo
+export function upgradeBuilding(building: Building, reason?: string): { building: Building; upgraded: boolean } {
+  const maxLevel = getMaxLevelForType(building.type);
+  
+  if (building.level >= maxLevel) {
+    return { building, upgraded: false }; // Já está no nível máximo
   }
   
-  return {
+  const newLevel = building.level + 1;
+  const newBuilding: Building = {
     ...building,
-    level: building.level + 1,
-    // Atualizar stage para compatibilidade (level 1->stage1, 2->stage2, 3->stage4)
-    stage: building.level + 1 === 3 ? 4 : building.level + 1,
+    level: newLevel,
+    // Atualizar stage para compatibilidade (level 1->stage1, 2->stage2, level max->stage4)
+    stage: newLevel === maxLevel ? 4 : newLevel,
   };
+  
+  return { building: newBuilding, upgraded: true };
 }
 
 /**
@@ -52,13 +59,14 @@ export function evolveBuildings(
   for (const building of sortedBuildings) {
     if (upgradesUsed >= totalUpgrades) break;
     
-    const upgradesForThisBuilding = Math.min(3 - building.level, totalUpgrades - upgradesUsed);
+    const maxLevel = getMaxLevelForType(building.type);
+    const upgradesForThisBuilding = Math.min(maxLevel - building.level, totalUpgrades - upgradesUsed);
     if (upgradesForThisBuilding > 0) {
       const newLevel = building.level + upgradesForThisBuilding;
       nextBuildings[building.id] = {
         ...building,
         level: newLevel,
-        stage: newLevel === 3 ? 4 : newLevel, // Mapear level 3 para stage 4
+        stage: newLevel === maxLevel ? 4 : newLevel, // Mapear level max para stage 4
       };
       upgradesUsed += upgradesForThisBuilding;
     }

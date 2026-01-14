@@ -1,5 +1,6 @@
 import React from "react";
 import { CityState } from "../lib/cityTypes";
+import { resolveStyle } from "../lib/buildingStyle";
 import Tile from "./Tile";
 
 type CityViewportProps = {
@@ -64,9 +65,10 @@ export default function CityViewport({
       // Usar level se disponível, senão mapear stage para level (compatibilidade)
       const tileLevel = building?.level ?? (building?.stage ? Math.min(building.stage, 3) : 1);
       const tileVariant = building?.variant ?? 0;
-      const tileLabel = showDebug && building 
-        ? `${building.type.substring(0, 3)} L${tileLevel} V${tileVariant}` 
-        : undefined;
+      
+      // Resolver estilo para debug
+      const style = building?.type ? resolveStyle(building.type, tileVariant) : null;
+      const styleSeed = style?.styleSeed;
 
       cells.push(
         <div key={key} style={cellStyle}>
@@ -75,8 +77,8 @@ export default function CityViewport({
             level={tileLevel}
             variant={tileVariant}
             size={64}
-            label={tileLabel}
             showDebug={showDebug}
+            styleSeed={styleSeed}
           />
         </div>
       );
